@@ -8,7 +8,7 @@ local aimlockEnabled = false
 local aimlockKey = Enum.KeyCode.E
 local fovRadius = 100
 local fovColor = Color3.fromRGB(255, 0, 0)
-local lockedTargetHead = nil
+local lockedTargetHumanoid = nil
 
 -- Configuração Speed Hack
 local speedEnabled = false
@@ -200,8 +200,8 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- Função para detectar Model com Humanoid sob o mouse e retornar a Head
-local function getModelHeadUnderMouse()
+-- Função para detectar Model com Humanoid sob o mouse e retornar o Humanoid
+local function getHumanoidUnderMouse()
     local mouse = LocalPlayer:GetMouse()
     local camera = workspace.CurrentCamera
     local ray = camera:ScreenPointToRay(mouse.X, mouse.Y)
@@ -224,10 +224,7 @@ local function getModelHeadUnderMouse()
             if humanoid and humanoid.Health > 0 then
                 -- Nunca grudar em si mesmo
                 if part.Parent ~= LocalPlayer.Character then
-                    local head = part.Parent:FindFirstChild("Head")
-                    if head and head:IsA("BasePart") then
-                        return head
-                    end
+                    return humanoid
                 end
             end
         end
@@ -237,9 +234,12 @@ end
 
 -- Aimlock lógica
 RunService.RenderStepped:Connect(function()
-    if aimlockEnabled and lockedTargetHead then
+    if aimlockEnabled and lockedTargetHumanoid then
         local camera = workspace.CurrentCamera
-        camera.CFrame = CFrame.new(camera.CFrame.Position, lockedTargetHead.Position)
+        local rootPart = lockedTargetHumanoid.Parent:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            camera.CFrame = CFrame.new(camera.CFrame.Position, rootPart.Position)
+        end
     end
 end)
 
@@ -270,10 +270,10 @@ RunService.RenderStepped:Connect(updateFovCircle)
 local function toggleAimlock()
     if not aimlockEnabled then
         -- Ativar: buscar Model com Humanoid sob mouse (player, NPC ou dummy)
-        local targetHead = getModelHeadUnderMouse()
-        if targetHead then
+        local targetHumanoid = getHumanoidUnderMouse()
+        if targetHumanoid then
             aimlockEnabled = true
-            lockedTargetHead = targetHead
+            lockedTargetHumanoid = targetHumanoid
             aimlockBtn.Text = "Aimlock: ON"
         else
             aimlockBtn.Text = "Aimlock: Nenhum alvo"
@@ -281,7 +281,7 @@ local function toggleAimlock()
     else
         -- Desativar
         aimlockEnabled = false
-        lockedTargetHead = nil
+        lockedTargetHumanoid = nil
         aimlockBtn.Text = "Aimlock: OFF"
     end
 end
